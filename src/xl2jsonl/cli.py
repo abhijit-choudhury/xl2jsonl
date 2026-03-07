@@ -78,7 +78,7 @@ def main(
     skip_empty: bool,
     verbose: int,
 ) -> None:
-    """Convert an Excel file to JSONL."""
+    """Convert an Excel (.xlsx, .xls, .xlsb) or CSV (.csv, .tsv) file to JSONL."""
     _setup_logging(verbose)
 
     if output is None:

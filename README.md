@@ -1,6 +1,6 @@
 # xl2jsonl
 
-Convert Excel files (`.xlsx`) to JSONL with robust handling of merged cells, multiple sheets, and mixed data types. Each output line is a JSON object containing row data as key-value pairs plus metadata for traceability.
+Convert Excel (`.xlsx`, `.xls`, `.xlsb`) and CSV (`.csv`, `.tsv`) files to JSONL with robust handling of merged cells, multiple sheets, and mixed data types. Each output line is a JSON object containing row data as key-value pairs plus metadata for traceability.
 
 ## Why xl2jsonl?
 
@@ -40,8 +40,8 @@ Each line in the output JSONL file is a self-contained JSON object:
 
 | Package | Purpose |
 |---|---|
-| [python-calamine](https://pypi.org/project/python-calamine/) | Fast Rust-backed Excel reader (default engine) |
-| [openpyxl](https://pypi.org/project/openpyxl/) | Merged cell detection and resolution |
+| [python-calamine](https://pypi.org/project/python-calamine/) | Fast Rust-backed Excel reader — supports .xlsx, .xls, .xlsb |
+| [openpyxl](https://pypi.org/project/openpyxl/) | Merged cell detection and resolution (.xlsx only) |
 | [click](https://pypi.org/project/click/) | CLI framework |
 | [orjson](https://pypi.org/project/orjson/) | Fast JSON serialization with native date handling |
 
@@ -67,6 +67,13 @@ This creates a virtual environment in `.venv/` and installs all dependencies inc
 ```bash
 # Convert all sheets (output defaults to <input>.jsonl)
 uv run xl2jsonl data.xlsx
+
+# CSV and TSV files
+uv run xl2jsonl report.csv -o output.jsonl
+uv run xl2jsonl data.tsv -o output.jsonl
+
+# Legacy Excel format
+uv run xl2jsonl legacy.xls -o output.jsonl
 
 # Specify output file
 uv run xl2jsonl data.xlsx -o output.jsonl
@@ -94,7 +101,7 @@ Full CLI help:
 ```
 Usage: xl2jsonl [OPTIONS] INPUT_FILE
 
-  Convert an Excel file to JSONL.
+  Convert an Excel (.xlsx, .xls, .xlsb) or CSV (.csv, .tsv) file to JSONL.
 
 Options:
   -o, --output PATH              Output JSONL file. Defaults to <input>.jsonl
@@ -233,12 +240,23 @@ uv run pytest --cov=xl2jsonl
 uv run pytest tests/test_loader.py
 ```
 
+## Supported Formats
+
+| Format | Extension | Merge Resolution | Notes |
+|---|---|---|---|
+| Excel (modern) | `.xlsx` | Full (openpyxl) | Default engine: calamine with openpyxl fallback for merges |
+| Excel (legacy) | `.xls` | No | Read via calamine only |
+| Excel Binary | `.xlsb` | No | Read via calamine only |
+| CSV | `.csv` | N/A | Basic type inference (int, float, bool) |
+| TSV | `.tsv` | N/A | Tab-delimited, same type inference |
+
 ## Limitations
 
-- Only `.xlsx` files are supported (not `.xls` or `.xlsb`)
+- Merged cell resolution is only available for `.xlsx` files (openpyxl limitation) — `.xls` and `.xlsb` are read via calamine without merge detection
 - The entire sheet grid is materialized in memory during loading (Excel files are not row-streamable); the chunker and writer stages stream lazily
-- Header auto-detection uses a heuristic (first row where 50%+ of non-empty cells are strings) — use `--header-row` to override if it guesses wrong
+- Header auto-detection uses heuristics (string majority, value diversity, column coverage) — use `--header-row` to override if it guesses wrong
 - Formulas are evaluated to their cached values (`data_only=True` in openpyxl) — if a file was never opened in Excel after formula changes, values may be stale
+- CSV type inference is best-effort: numeric strings become int/float, "true"/"false" become booleans, everything else stays as strings
 
 ## License
 

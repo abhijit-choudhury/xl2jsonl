@@ -238,13 +238,63 @@ def _find_row_blocks(
 
 
 def _detect_header_row(rows: list[list[CellValue]]) -> int | None:
-    """Find the first row that looks like a table header."""
+    """Find the best row that looks like a table header.
+
+    Handles multi-row headers (e.g. a category row with merged cells above
+    the actual column headers) by checking if a subsequent row has better
+    column coverage when the first candidate has duplicate values.
+    """
     for idx, row in enumerate(rows):
         if _is_empty_row(row):
             continue
-        if _is_header_candidate(row, row_num=idx + 1):
-            return idx
+        if not _is_header_candidate(row, row_num=idx + 1):
+            continue
+
+        # Check for multi-row header: if this candidate has duplicate values
+        # (from merged category cells), a subsequent row may be the real header.
+        non_empty = [c for c in row if c is not None and c != ""]
+        distinct = len(set(str(c).strip() for c in non_empty))
+        if distinct < len(non_empty):
+            better = _find_best_header_in_run(rows, idx)
+            if better != idx:
+                logger.debug(
+                    "Row %d has duplicates (%d/%d distinct), "
+                    "preferring row %d with better coverage",
+                    idx + 1,
+                    distinct,
+                    len(non_empty),
+                    better + 1,
+                )
+                return better
+
+        return idx
     return None
+
+
+def _find_best_header_in_run(
+    rows: list[list[CellValue]], start: int
+) -> int:
+    """Among consecutive header candidates starting at *start*, return the
+    index of the one with the most non-empty cells (best column coverage)."""
+    best_idx = start
+    best_count = _non_empty_count(rows[start])
+
+    for j in range(start + 1, min(start + 5, len(rows))):
+        r = rows[j]
+        if _is_empty_row(r):
+            continue
+        if not _is_header_candidate(r, row_num=j + 1):
+            break
+        count = _non_empty_count(r)
+        if count > best_count:
+            best_count = count
+            best_idx = j
+
+    return best_idx
+
+
+def _non_empty_count(row: list[CellValue]) -> int:
+    return sum(1 for c in row if c is not None and c != "")
 
 
 def _is_header_candidate(
