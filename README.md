@@ -228,7 +228,7 @@ excel-chunker/
 
 ```bash
 # Run all tests
-uv run pytest
+uv run python -m pytest
 
 # Verbose output
 uv run pytest -v
