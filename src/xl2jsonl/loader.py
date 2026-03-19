@@ -101,7 +101,7 @@ def _load_csv(path: Path, delimiter: str = ",") -> SheetData:
     """Load a CSV/TSV file as a single-sheet SheetData."""
     rows: list[list[CellValue]] = []
 
-    with open(path, newline="", encoding="utf-8-sig") as f:
+    with open(path, newline="", encoding="utf-8-sig", errors="ignore") as f:
         reader = csv.reader(f, delimiter=delimiter)
         for row in reader:
             rows.append([_infer_csv_type(cell) for cell in row])
