@@ -1,6 +1,6 @@
 [project]
 name = "xl2jsonl"
-version = "0.1.0"
+version = "0.1.1"
 description = "Convert Excel files to JSONL with robust merged-cell handling"
 readme = "README.md"
 license = "MIT"

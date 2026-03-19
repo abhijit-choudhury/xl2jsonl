@@ -240,6 +240,14 @@ uv run pytest --cov=xl2jsonl
 uv run pytest tests/test_loader.py
 ```
 
+## Publish
+
+ The process for a new release:
+
+Update version in pyproject.toml (e.g. 0.1.0 → 0.1.1)
+uv build
+uv publish
+
 ## Supported Formats
 
 | Format | Extension | Merge Resolution | Notes |
